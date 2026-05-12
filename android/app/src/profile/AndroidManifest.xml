@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.fif_quiz">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <application
+        android:label="FIF Legacy Quiz"
+        android:icon="@mipmap/ic_launcher">
+        <!-- Other configurations here -->
+    </application>
+</manifest>
