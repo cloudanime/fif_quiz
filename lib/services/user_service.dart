@@ -64,7 +64,7 @@ class UserService {
       final userResponse = await _supabase
           .from('users')
           .select('id')
-          .eq('username', username)
+          .ilike('username', username)
           .maybeSingle();
 
       if (userResponse == null) return null;

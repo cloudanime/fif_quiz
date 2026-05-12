@@ -61,9 +61,9 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
     _trophyConfettiController =
         ConfettiController(duration: const Duration(seconds: 1));
     _megaConfettiController =
-        ConfettiController(duration: const Duration(seconds: 7));
+        ConfettiController(duration: const Duration(seconds: 9));
     _megaParticleController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 7));
+        AnimationController(vsync: this, duration: const Duration(seconds: 9));
 
     Future.delayed(Duration.zero, () {
       _startAutoRotation();
@@ -82,7 +82,7 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
 
   void _startAutoRotation() {
     // Synchronized with the 12s animation (moving slightly before total fade)
-    int delaySeconds = (_currentImageIndex == _imageAssets.length - 1) ? 5 : 3;
+    int delaySeconds = (_currentImageIndex == _imageAssets.length - 1) ? 9 : 3;
     Future.delayed(Duration(seconds: delaySeconds), () {
       if (_pageController.hasClients) {
         _currentImageIndex = (_currentImageIndex + 1) % _imageAssets.length;
@@ -1019,15 +1019,14 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
               colors: const [
-                Colors.green,
-                Colors.blue,
-                Colors.pink,
-                Colors.orange,
+                Color(0xFFFFD700), // Gold
                 Colors.purple,
-                Colors.yellow,
-                Color(0xFFFFD700),
+                Colors.blue,
+                Colors.white,
               ],
-              createParticlePath: _drawPaperConfettiPath,
+              minBlastForce: 2,
+              maxBlastForce: 5,
+              createParticlePath: _drawStarPath,
             ),
           ),
           // Mega PNG Confetti Overlay
@@ -1043,20 +1042,19 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
             child: ConfettiWidget(
               confettiController: _megaConfettiController,
               blastDirectionality: BlastDirectionality.explosive,
-              maxBlastForce: 45, // Increased blast force
-              minBlastForce: 15,
-              emissionFrequency: 0.1, // Faster emission
-              numberOfParticles: 25, // More paper strips
+              maxBlastForce: 20,
+              minBlastForce: 5,
+              emissionFrequency: 0.05,
+              numberOfParticles: 10,
               gravity: 0.1,
               shouldLoop: false,
               colors: const [
-                Colors.yellow,
+                Color(0xFFFFD700), // Gold
                 Colors.purple,
                 Colors.blue,
-                Colors.pink,
-                Colors.green
+                Colors.white,
               ],
-              createParticlePath: _drawPaperConfettiPath,
+              createParticlePath: _drawStarPath,
             ),
           ),
         ],
@@ -1089,7 +1087,7 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
         ];
 
         return Stack(
-          children: List.generate(24, (index) {
+          children: List.generate(14, (index) { // Increased to a balanced 14
             final rand = math.Random(index * 99);
             final progress = _megaParticleController.value;
 
@@ -1126,17 +1124,17 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
               // Launch in an upward arc (-0.1pi to -0.9pi) for wider spread
               final angle =
                   -math.pi * 0.1 - (rand.nextDouble() * math.pi * 0.8);
-              final speedX = 150.0 +
-                  rand.nextDouble() * 400.0; // Slightly slower horizontal speed
-              final speedY = 600.0 +
+              final speedX = 200.0 +
+                  rand.nextDouble() * 350.0; // Slower horizontal
+              final speedY = 450.0 +
                   rand.nextDouble() *
-                      500.0; // Slightly lower launch to keep in view longer
+                      400.0; // Slower launch for more hang time
 
               final x = math.cos(angle) * speedX * burstSubProgress;
               // y = v0*t + 1/2 * g * t^2. Reduced gravity (900) for more hang time
               final y = startY +
                   (math.sin(angle) * speedY * burstSubProgress) +
-                  (burstSubProgress * burstSubProgress * 900);
+                  (burstSubProgress * burstSubProgress * 800); // Softer gravity (800) for longer float time
 
               offset = Offset(x, y);
               // Fade out slower at the start, faster at the end
@@ -1158,8 +1156,8 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
                         assets[index % assets.length],
                         width: 45 +
                             (rand.nextDouble() *
-                                30), // Slightly larger and varied
-                        height: 45 + (rand.nextDouble() * 30),
+                                20), // Balanced size (45-65)
+                        height: 45 + (rand.nextDouble() * 20),
                         errorBuilder: (_, __, ___) =>
                             const Icon(Icons.star, color: Colors.yellow),
                       ),
@@ -1174,9 +1172,36 @@ class _ModeSelectionPageState extends State<ModeSelectionPage>
     );
   }
 
-  Path _drawPaperConfettiPath(Size size) {
+  Path _drawStarPath(Size size) {
+    // Vary the size randomly for each particle
+    final rand = math.Random();
+    final double scaleFactor = 0.4 + rand.nextDouble() * 0.8; // Random size between 40% and 120%
+    final double finalWidth = size.width * scaleFactor;
+    
+    double degToRad(double deg) => deg * (math.pi / 180.0);
+    const numberOfPoints = 5;
+    final halfWidth = finalWidth / 2;
+    final externalRadius = halfWidth;
+    final internalRadius = halfWidth / 2.5;
+    final degreesPerStep = degToRad(360 / numberOfPoints);
+    final halfDegreesPerStep = degreesPerStep / 2;
     final path = Path();
-    path.addRect(Rect.fromLTWH(0, 0, size.width, size.height * 0.4));
+    final fullAngle = degToRad(-90);
+    path.moveTo(halfWidth, 0);
+
+    for (double step = 0; step < 360 / numberOfPoints; step++) {
+      path.lineTo(
+          halfWidth + externalRadius * math.cos(step * degreesPerStep + fullAngle),
+          halfWidth + externalRadius * math.sin(step * degreesPerStep + fullAngle));
+      path.lineTo(
+          halfWidth +
+              internalRadius *
+                  math.cos(step * degreesPerStep + halfDegreesPerStep + fullAngle),
+          halfWidth +
+              internalRadius *
+                  math.sin(step * degreesPerStep + halfDegreesPerStep + fullAngle));
+    }
+    path.close();
     return path;
   }
 
